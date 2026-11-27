@@ -8,7 +8,7 @@
   var C = root.TTCalc;
   var DATA = null, RAW = null;      // 정리된 데이터
   var META = {};        // 불러오기 결과(기타마켓 연결 여부 등)
-  var S = { mtag: '', msort: 'cost', msel: [], mapage: 0, view: 'home', from: '', to: '', preset: '1', cmp: 'prev', cmpFrom: '', cmpTo: '', ch: 'all', unit: 'auto', ad: 'store', page: 0, pch: 'all', pmode: 'item', open: '', draft: null, costMsg: '', saving: false, q: '', sel: [], selMsg: '', tpage: 0, topen: '', acOpen: {}, acSel: null, acBasis: 'ad', adView: 'camp', aitem: '', amd: 'all', apage: 0, aopen: {}, aiq: '', ppage: 0, psize: 10, dsort: 'new', ipage: 0, ptunit: 'auto', ptmet: 'qty', mpage: 0 };
+  var S = { mtag: '', msort: 'cost', msel: [], mapage: 0, view: 'home', from: '', to: '', preset: '1', cmp: 'off', cmpFrom: '', cmpTo: '', ch: 'all', unit: 'auto', ad: 'store', page: 0, pch: 'all', pmode: 'item', open: '', draft: null, costMsg: '', saving: false, q: '', sel: [], selMsg: '', tpage: 0, topen: '', acOpen: {}, acSel: null, acBasis: 'ad', adView: 'camp', aitem: '', amd: 'all', apage: 0, aopen: {}, aiq: '', ppage: 0, psize: 10, dsort: 'new', ipage: 0, ptunit: 'auto', ptmet: 'qty', mpage: 0 };
   var READY = { home: 1, sales: 1, ads: 1, products: 1, customers: 1, promo: 1, data: 1, slack: 1, itemadmin: 1, feedback: 1, supply: 1, settings: 1, othersale: 1 }; // 옮겨온 메뉴
   var STORE_KEY = 'tt6_state';
 
@@ -74,7 +74,7 @@
   }
   function periodBar() {
     var cr = cmpRange();
-    var presets = [['1', '1일'], ['7', '7일'], ['30', '30일'], ['90', '90일'], ['thisMonth', '이번 달'], ['lastMonth', '지난달'], ['thisYear', '올해'], ['all', '전체 기간']];
+    var presets = [['1', '1일'], ['7', '7일'], ['30', '30일'], ['90', '90일'], ['180', '180일'], ['365', '365일'], ['thisMonth', '이번 달'], ['lastMonth', '지난달'], ['thisYear', '올해'], ['all', '전체 기간']];
     var cmps = [['prev', '바로 앞 같은 길이'], ['lastYear', '작년 같은 기간'], ['custom', '직접 지정'], ['off', '비교 끄기']];
     var custom = S.cmp === 'custom';
     var h = '<section class="period" aria-label="기간 설정">';
