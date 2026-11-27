@@ -78,14 +78,15 @@
     var cmps = [['prev', '바로 앞 같은 길이'], ['lastYear', '작년 같은 기간'], ['custom', '직접 지정'], ['off', '비교 끄기']];
     var custom = S.cmp === 'custom';
     var h = '<section class="period" aria-label="기간 설정">';
-    h += '<div class="period-row"><b>조회 기간</b>';
+    function arrow(act, dir, ok, what) { return '<button type="button" class="parrow" data-act="' + act + '" data-key="' + dir + '"' + (ok ? '' : ' disabled') + ' aria-label="' + what + (dir < 0 ? ' 이전으로' : ' 다음으로') + '" title="' + what + (dir < 0 ? ' 이전으로' : ' 다음으로') + '">' + (dir < 0 ? '◀' : '▶') + '</button>'; }
+    h += '<div class="period-row"><b>조회 기간</b>' + arrow('pshift', -1, !!C.shiftRange(S.from, S.to, -1, DATA.first, DATA.last), '조회 기간');
     h += '<label>시작<input type="date" data-act="from" value="' + S.from + '" min="' + DATA.first + '" max="' + DATA.last + '"></label>';
-    h += '<label>끝<input type="date" data-act="to" value="' + S.to + '" min="' + DATA.first + '" max="' + DATA.last + '"></label>';
+    h += '<label>끝<input type="date" data-act="to" value="' + S.to + '" min="' + DATA.first + '" max="' + DATA.last + '"></label>' + arrow('pshift', 1, S.to < DATA.last && !!C.shiftRange(S.from, S.to, 1, DATA.first, DATA.last), '조회 기간');
     h += '<span class="pdays num" title="시작일과 끝일을 모두 포함한 날짜 수">' + n0(C.dayDiff(S.from, S.to) + 1) + '일</span>';
     presets.forEach(function (p) { h += '<button type="button" class="chip" data-act="preset" data-key="' + p[0] + '" aria-pressed="' + (S.preset === p[0]) + '">' + p[1] + '</button>'; });
-    h += '</div><div class="period-row"><b>비교 기간</b>';
+    h += '</div><div class="period-row"><b>비교 기간</b>' + arrow('cshift', -1, !!cr && !!C.shiftRange(cr.from, cr.to, -1, DATA.first, DATA.last), '비교 기간');
     h += '<label>시작<input type="date" data-act="cmpFrom" value="' + (cr ? cr.from : '') + '" min="' + DATA.first + '" max="' + DATA.last + '"' + (custom ? '' : ' disabled') + '></label>';
-    h += '<label>끝<input type="date" data-act="cmpTo" value="' + (cr ? cr.to : '') + '" min="' + DATA.first + '" max="' + DATA.last + '"' + (custom ? '' : ' disabled') + '></label>';
+    h += '<label>끝<input type="date" data-act="cmpTo" value="' + (cr ? cr.to : '') + '" min="' + DATA.first + '" max="' + DATA.last + '"' + (custom ? '' : ' disabled') + '></label>' + arrow('cshift', 1, !!cr && cr.to < DATA.last && !!C.shiftRange(cr.from, cr.to, 1, DATA.first, DATA.last), '비교 기간');
     h += '<span class="pdays num">' + (cr ? n0(C.dayDiff(cr.from, cr.to) + 1) + '일' : '-') + '</span>';
     cmps.forEach(function (p) { h += '<button type="button" class="chip" data-act="cmp" data-key="' + p[0] + '" aria-pressed="' + (S.cmp === p[0]) + '">' + p[1] + '</button>'; });
     h += '</div><span class="period-note">가장 오래된 데이터인 ' + dot(DATA.first) + '부터 조회할 수 있습니다' + (DATA.span.naver.first ? ' (네이버는 ' + dot(DATA.span.naver.first) + '부터)' : '') + '. 여기서 정한 기간은 다른 메뉴로 옮겨도 유지됩니다.</span>';
@@ -3205,6 +3206,8 @@
     if (act !== 'csv' && act !== 'adcsv') { S.page = 0; S.tpage = 0; S.apage = 0; } // 기간, 메뉴, 채널이 바뀌면 첫 쪽으로
     if (act === 'view') S.view = key;
     else if (act === 'preset') applyPreset(key);
+    else if (act === 'pshift') { var r1 = C.shiftRange(S.from, S.to, +key, DATA.first, DATA.last); if (r1) { S.from = r1.from; S.to = r1.to; S.preset = ''; } }
+    else if (act === 'cshift') { var cr1 = cmpRange(), r2 = cr1 && C.shiftRange(cr1.from, cr1.to, +key, DATA.first, DATA.last); if (r2) { S.cmp = 'custom'; S.cmpFrom = r2.from; S.cmpTo = r2.to; } }
     else if (act === 'cmp') {
       if (key === 'custom') { var r = cmpRange() || C.prevPeriod(S.from, S.to); S.cmpFrom = r.from; S.cmpTo = r.to; }
       S.cmp = key;
