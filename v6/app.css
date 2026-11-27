@@ -455,3 +455,29 @@ body.dropping .main { outline: 3px dashed var(--accent); outline-offset: -8px; }
 .tbl.adday tr.lv1 th { padding-left: 26px; }
 .tbl.adday tr.lv2 th { padding-left: 50px; }
 .tbl.adday tr.lv3 th { padding-left: 74px; }
+
+/* 이번 달 온라인 매출 실적 (홈) */
+.pace-body { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+.pace-row { display: grid; grid-template-columns: 120px 1fr 150px; gap: 14px; align-items: center; }
+.pace-l { display: flex; flex-direction: column; }
+.pace-l b { font-size: 14px; }
+.pace-l small { font-size: 12px; color: var(--sub); }
+.pace-track { position: relative; height: 26px; background: #EEF0F5; border-radius: 6px; }
+.pace-track::after { content: ''; position: absolute; top: -4px; bottom: -4px; left: 83.333%; border-left: 2px dashed #9AA0AE; }
+.pace-fill { height: 100%; border-radius: 6px; transition: width .4s; }
+.pace-fill.g { background: #22B573; }
+.pace-fill.b { background: #3B8BEB; }
+.pace-fill.o { background: #F39237; }
+.pace-mark { position: absolute; top: -6px; bottom: -6px; width: 3px; margin-left: -1px; background: #1F2937; border-radius: 2px; }
+.pace-pct { position: absolute; top: 50%; transform: translate(6px, -50%); font-size: 13px; font-weight: 700; white-space: nowrap; }
+.pace-pct.in { transform: translate(calc(-100% - 8px), -50%); color: #fff; }
+.pace-v { text-align: right; font-size: 13px; }
+.pace-v b { font-size: 16px; margin-right: 4px; }
+.pace-v small { color: var(--sub); }
+.pace-row.axis { margin-top: -4px; }
+.pace-ticks { position: relative; height: 16px; font-size: 11px; color: var(--sub); }
+.pace-ticks span { position: absolute; transform: translateX(-50%); }
+.pace-ticks span:first-child { transform: none; }
+.pace-ticks span:last-child { transform: translateX(-100%); }
+@media (max-width: 720px) { .pace-row { grid-template-columns: 84px 1fr; } .pace-v { grid-column: 2; text-align: left; } }
+.card.pace { margin-bottom: 22px; }

@@ -218,6 +218,27 @@
     for (var i = 0; i < rows.length; i++) { var e = rows[i]; if (e.d >= from && e.d <= to) s += e[field] || 0; }
     return s;
   }
+  /* 이번 달 실적 (홈 맨 위 가로 막대, 2026-11-27 예영: 편의점 POS처럼 당월누계/전일/당일, 목표 = 지난달)
+   * 기준 = 데이터 기준일(base). 당월누계 목표 = 지난달 실매출 전체, 하루 목표 = 지난달 하루 평균
+   * pace = 이번 달 지난 날 ÷ 이번 달 전체 날 (오늘까지 목표 진도), forecast = 지금 속도로 월말까지 간 값
+   */
+  function monthPace(data, base) {
+    base = base || data.last; if (!base) return null;
+    var y = +base.slice(0, 4), m = +base.slice(5, 7), dd = +base.slice(8, 10);
+    function ymd(Y, M, D) { return Y + '-' + ('0' + M).slice(-2) + '-' + ('0' + D).slice(-2); }
+    function dim(Y, M) { return new Date(Y, M, 0).getDate(); }
+    var py = m === 1 ? y - 1 : y, pm = m === 1 ? 12 : m - 1, pDays = dim(py, pm), days = dim(y, m);
+    var mFrom = ymd(y, m, 1), pFrom = ymd(py, pm, 1), pTo = ymd(py, pm, pDays), yday = addDays(base, -1);
+    function part(f, t) { var s = summary(data, f, t); return { total: s.total, naver: s.naverNet, coupang: s.coupang, other: s.other }; }
+    var prev = part(pFrom, pTo), dayGoal = prev.total / pDays;
+    function row(cur, goal) { return { cur: cur, goal: goal, pct: goal > 0 ? cur.total / goal : null }; }
+    var mtd = part(mFrom, base);
+    return {
+      base: base, month: ymd(y, m, 1).slice(0, 7), prevMonth: pFrom.slice(0, 7), prev: prev, days: days, elapsed: dd, pace: dd / days,
+      mtd: row(mtd, prev.total), yday: Object.assign(row(part(yday, yday), dayGoal), { d: yday }), today: Object.assign(row(part(base, base), dayGoal), { d: base }),
+      forecast: mtd.total / dd * days, forecastPct: prev.total > 0 ? (mtd.total / dd * days) / prev.total : null
+    };
+  }
   function summary(data, from, to) {
     var r = {};
     r.naverNet = sum(data.naver, from, to, 'net');
@@ -1350,7 +1371,7 @@
   return {
     num: num, normDate: normDate, addDays: addDays, dayDiff: dayDiff, normalize: normalize,
     prevPeriod: prevPeriod, lastYear: lastYear, preset: preset,
-    summary: summary, delta: delta, daily: daily, bucket: bucket, autoUnit: autoUnit,
+    summary: summary, monthPace: monthPace, delta: delta, daily: daily, bucket: bucket, autoUnit: autoUnit,
     dailyFull: dailyFull, bucketFull: bucketFull, totalFull: totalFull, coupangTop: coupangTop, otherByMarket: otherByMarket, otherRows: otherRows,
     adsDaily: adsDaily, adsBucket: adsBucket, adsTotal: adsTotal, adsBreakdown: adsBreakdown, metaAds: metaAds, metaDaily: metaDaily, metaTraffic: metaTraffic, metaKey: metaKey, setOpts: setOpts, opt: opt, OPT_DEFAULT: OPT_DEFAULT, ratio: ratio,
     backupRows: backupRows, restoreDiff: restoreDiff, canonJson: canonJson,
