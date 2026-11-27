@@ -202,6 +202,25 @@
     function back(ds) { var d = toDate(ds); d.setFullYear(d.getFullYear() - 1); return fmtDate(d); }
     return { from: back(from), to: back(to) };
   }
+  /* 기간 ◀ ▶: 달 단위로 잡힌 기간(1일 시작 + 말일 끝, 또는 1일 ~ 기준일 같은 달)은 달 단위로, 아니면 같은 일수만큼 옮긴다
+   * dir = -1(이전) / 1(다음), last = 데이터 기준일(이 뒤로는 못 감), first = 첫 데이터일. 더 갈 수 없으면 null
+   */
+  function shiftRange(from, to, dir, first, last) {
+    function mEnd(ds) { var a = toDate(ds); return fmtDate(new Date(a.getFullYear(), a.getMonth() + 1, 0)); }
+    function mAdd(ds, n) { var a = toDate(ds); return fmtDate(new Date(a.getFullYear(), a.getMonth() + n, 1)); }
+    var r, monthly = from.slice(8) === '01' && (to === mEnd(to) || (to === last && to.slice(0, 7) === from.slice(0, 7)));
+    if (monthly) {
+      var n = to.slice(0, 7) === from.slice(0, 7) ? 1 : (+to.slice(0, 4) - +from.slice(0, 4)) * 12 + (+to.slice(5, 7) - +from.slice(5, 7)) + 1;
+      var nf = mAdd(from, dir * n); r = { from: nf, to: mEnd(mAdd(nf, n - 1)) };
+    } else {
+      var len = dayDiff(from, to) + 1; r = { from: addDays(from, dir * len), to: addDays(to, dir * len) };
+    }
+    if (last && r.from > last) return null;
+    if (first && r.to < first) return null;
+    if (last && r.to > last) r.to = last;
+    if (first && r.from < first) r.from = first;
+    return r;
+  }
   function preset(key, anchor, first) {
     var a = toDate(anchor);
     if (key === '1' || key === '7' || key === '30' || key === '90' || key === '180' || key === '365') return { from: addDays(anchor, -(+key - 1)), to: anchor };
@@ -1371,7 +1390,7 @@
   return {
     num: num, normDate: normDate, addDays: addDays, dayDiff: dayDiff, normalize: normalize,
     prevPeriod: prevPeriod, lastYear: lastYear, preset: preset,
-    summary: summary, monthPace: monthPace, delta: delta, daily: daily, bucket: bucket, autoUnit: autoUnit,
+    summary: summary, monthPace: monthPace, shiftRange: shiftRange, delta: delta, daily: daily, bucket: bucket, autoUnit: autoUnit,
     dailyFull: dailyFull, bucketFull: bucketFull, totalFull: totalFull, coupangTop: coupangTop, otherByMarket: otherByMarket, otherRows: otherRows,
     adsDaily: adsDaily, adsBucket: adsBucket, adsTotal: adsTotal, adsBreakdown: adsBreakdown, metaAds: metaAds, metaDaily: metaDaily, metaTraffic: metaTraffic, metaKey: metaKey, setOpts: setOpts, opt: opt, OPT_DEFAULT: OPT_DEFAULT, ratio: ratio,
     backupRows: backupRows, restoreDiff: restoreDiff, canonJson: canonJson,

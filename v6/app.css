@@ -483,3 +483,10 @@ body.dropping .main { outline: 3px dashed var(--accent); outline-offset: -8px; }
 
 /* 화면 편집 때문에 본문을 #vbody로 한 번 감싸면서 카드 사이 20px 간격이 사라졌던 것 되살림 (2026-11-27 예영 제보) */
 #vbody { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+/* 기간 ◀ ▶ */
+.parrow { width: 34px; height: 40px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--text); font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.parrow:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.parrow:disabled { opacity: .35; cursor: default; }
+.period-row { gap: 6px; }
+.period-row .chip { padding-left: 11px; padding-right: 11px; }
+.period-row .parrow { width: 30px; }
