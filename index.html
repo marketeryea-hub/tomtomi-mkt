@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>톰토미 마케팅 대시보드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="v6/app.css?v=6.24.0">
+</head>
+<body>
+<div id="lock" class="lock">
+  <form class="lock-box" id="lockForm">
+    <h1>톰토미 마케팅 대시보드</h1>
+    <p>로그인해 주세요</p>
+    <label for="em" class="sr">이메일</label>
+    <input id="em" type="email" placeholder="이메일" autocomplete="username" required>
+    <label for="pw" class="sr">비밀번호</label>
+    <input id="pw" type="password" placeholder="비밀번호" autocomplete="current-password" required>
+    <label class="lock-keep"><input id="keep" type="checkbox" checked> 이 브라우저에서 로그인 유지</label>
+    <button class="btn" type="submit" id="lockBtn">로그인</button>
+    <div class="lock-err" id="lockErr" role="alert"></div>
+  </form>
+</div>
+<div id="app"></div>
+<div id="tip" class="tip" hidden></div>
+<script src="v6/calc.js?v=6.24.0"></script>
+<script src="v6/data.js?v=6.24.0"></script>
+<script src="v6/parsers.js?v=6.24.0"></script>
+<script src="v6/addetail.js?v=6.24.0"></script>
+<script src="v6/report.js?v=6.24.0"></script>
+<script src="v6/changelog.js?v=6.24.0"></script>
+<script src="v6/ui.js?v=6.24.0"></script>
+<script>
+// 로그인 (Supabase Auth). 비밀번호는 Supabase가 확인하고, 이 페이지에는 남지 않는다
+(function () {
+  var lock = document.getElementById('lock'), err = document.getElementById('lockErr'), btn = document.getElementById('lockBtn'), booted = false;
+  function open() { lock.hidden = true; if (!booted) { booted = true; TTApp.boot(); } }
+  function show(msg) { lock.hidden = false; err.textContent = msg || ''; document.getElementById('pw').value = ''; setTimeout(function () { document.getElementById(document.getElementById('em').value ? 'pw' : 'em').focus(); }, 0); }
+  TTAuth.onLost(function () { if (booted) { booted = false; document.getElementById('app').innerHTML = ''; } show('로그인이 만료됐어요. 다시 로그인해 주세요'); });
+  try { sessionStorage.removeItem('tt_auth'); } catch (e) { /* 옛 비밀번호 화면 흔적 지우기 */ }
+  if (TTAuth.hasSession()) TTAuth.token().then(function (t) { if (t) open(); else show(''); }); else show('');
+  document.getElementById('lockForm').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    btn.disabled = true; btn.textContent = '확인 중…'; err.textContent = '';
+    TTAuth.signIn(document.getElementById('em').value, document.getElementById('pw').value, document.getElementById('keep').checked)
+      .then(function () { document.getElementById('pw').value = ''; open(); }, function (e) { show(e && e.message ? e.message : '로그인하지 못했어요'); })
+      .then(function () { btn.disabled = false; btn.textContent = '로그인'; });
+  });
+})();
+</script>
+</body>
+</html>
