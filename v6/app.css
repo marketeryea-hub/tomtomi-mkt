@@ -480,4 +480,6 @@ body.dropping .main { outline: 3px dashed var(--accent); outline-offset: -8px; }
 .pace-ticks span:first-child { transform: none; }
 .pace-ticks span:last-child { transform: translateX(-100%); }
 @media (max-width: 720px) { .pace-row { grid-template-columns: 84px 1fr; } .pace-v { grid-column: 2; text-align: left; } }
-.card.pace { margin-bottom: 22px; }
+
+/* 화면 편집 때문에 본문을 #vbody로 한 번 감싸면서 카드 사이 20px 간격이 사라졌던 것 되살림 (2026-11-27 예영 제보) */
+#vbody { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
