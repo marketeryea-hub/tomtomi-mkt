@@ -449,3 +449,4 @@ section.edoff { opacity: .4; }
 body.viewer .edonly { display: none !important; }
 body.viewer section[aria-label="프로모션 등록"], body.viewer [data-act="pnew"], body.viewer [data-act="pedit"], body.viewer [data-act="prowdelask"], body.viewer [data-act="plpromo"], body.viewer .edtail button { display: none !important; }
 body.viewer section[aria-label="프로모션 등록"], body.viewer [data-act="pnew"], body.viewer [data-act="pedit"], body.viewer [data-act="prowdelask"], body.viewer [data-act="plpromo"], body.viewer .edtail button { display: none !important; }
+body.dropping .main { outline: 3px dashed var(--accent); outline-offset: -8px; }

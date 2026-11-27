@@ -1383,6 +1383,10 @@
               return;
             }
           }
+          if (!type && /\.xlsx$/i.test(name)) { // 기타몰 매출 양식이면 그 화면으로 안내
+            var hw = root.XLSX.read(buf, { type: 'array' }), hr = (root.XLSX.utils.sheet_to_json(hw.Sheets[hw.SheetNames[0]], { header: 1 })[0] || []).map(function (v) { return String(v || '').trim(); });
+            if (hr.indexOf('매출액') >= 0 && (hr.indexOf('몰') >= 0 || hr.indexOf('채널') >= 0)) { item.err = '기타몰 매출 파일이에요. 관리 > 기타몰 매출 화면에 올려 주세요 (그 화면에 끌어다 놓으면 돼요)'; return; }
+          }
           if (!type) { item.err = '어떤 파일인지 알 수 없습니다 (파일 이름을 확인해 주세요)'; return; }
           if (type === 'skuMap') { item.err = '옵션 매핑표는 이 화면 아래쪽 [옵션 매핑표] 칸의 [매핑표 올리기]로 올려 주세요'; return; }
           if (!root.TTParse.SUPPORTED[type]) { item.err = '이제 받지 않는 파일입니다 (상품성과, 검색어, 고객 파일은 네이버 개편으로 더 이상 쓰지 않습니다)'; return; }
@@ -2291,7 +2295,7 @@
     all.forEach(function (e) { var o = malls[e.m] || (malls[e.m] = { n: 0, a: 0 }); o.n++; o.a += e.a; });
     list.forEach(function (e) { tot.n++; tot.a += e.a; });
     h += '<section class="card" aria-label="기타몰 매출"><div class="card-h"><h2>기타몰 매출</h2><span class="hint">카카오 선물하기를 뺀 몰(이베이, 11번가 등)의 주문을 여기에 적어요. 매출, 상품 화면의 기타마켓으로 들어가요</span>' + (OS.form && !OS.form.id ? '' : '<button type="button" class="btn" data-act="osnew">+ 새로 입력</button>') + '</div>';
-    h += '<div class="aipick"><button type="button" class="chip" data-act="ostpl">엑셀 양식 받기</button><label class="chip filebtn">엑셀로 한 번에 올리기<input type="file" accept=".xlsx,.xls" data-act="osxls" hidden></label></div>';
+    h += '<div class="aipick"><button type="button" class="chip" data-act="ostpl">엑셀 양식 받기</button><label class="chip filebtn">엑셀로 한 번에 올리기<input type="file" accept=".xlsx,.xls" data-act="osxls" hidden></label><span class="hint">이 화면 아무 데나 엑셀 파일을 끌어다 놓아도 돼요</span></div>';
     h += '<div class="pchips spboxes" role="group" aria-label="몰"><button type="button" class="chip" data-act="osmall" data-key="" aria-pressed="' + (!OS.mall) + '">전체 몰 <small>' + all.length + '</small></button>' + Object.keys(malls).sort().map(function (m) { return '<button type="button" class="chip" data-act="osmall" data-key="' + esc(m) + '" aria-pressed="' + (OS.mall === m) + '">' + esc(m) + ' <small>' + malls[m].n + '</small></button>'; }).join('') + '</div>';
     if (OS.msg) h += '<p class="note"><b>' + esc(OS.msg) + '</b></p>';
     if (OS.err && !OS.form) h += '<p class="note"><b class="warn">' + esc(OS.err) + '</b></p>';
@@ -3238,10 +3242,23 @@
       else if (ev.key === 'Escape') { if (box === '#psug') PR.q = ''; else if (box === '#plsug') PL.q = ''; else S.aiq = ''; el.value = ''; var sg = document.querySelector(box); if (sg) sg.hidden = true; }
       else if (ev.key === 'ArrowDown') { var b = document.querySelector(box + ' .aisug-i'); if (b) { ev.preventDefault(); b.focus(); } }
     });
-    // 파일 끌어다 놓기 (데이터 관리)
-    document.addEventListener('dragover', function (ev) { var z = ev.target.closest && ev.target.closest('[data-drop]'); if (z) { ev.preventDefault(); z.classList.add('over'); } });
-    document.addEventListener('dragleave', function (ev) { var z = ev.target.closest && ev.target.closest('[data-drop]'); if (z) z.classList.remove('over'); });
-    document.addEventListener('drop', function (ev) { var z = ev.target.closest && ev.target.closest('[data-drop]'); if (!z) return; ev.preventDefault(); z.classList.remove('over'); onUpload(ev.dataTransfer.files); });
+    // 파일 끌어다 놓기: 데이터 관리(여러 파일), 기타몰 매출, 소모품/비품, 상품 관리(엑셀 1개). 화면 아무 데나 놓아도 그 화면의 올리기로 간다
+    // 브라우저가 파일을 새 탭으로 열어버리지 않게 늘 막는다 (2026-11-27 예영: 기타몰 파일을 끌어다 놓았는데 안 됨)
+    var DROP_VIEW = { data: 'up', othersale: 'os', supply: 'sp', itemadmin: 'ia' };
+    function dropKind(ev) { var z = ev.target.closest && ev.target.closest('[data-drop]'); return z ? (z.getAttribute('data-drop') === '1' ? 'up' : z.getAttribute('data-drop')) : DROP_VIEW[S.view] || ''; }
+    function isFileDrag(ev) { var t = ev.dataTransfer && ev.dataTransfer.types; return !!t && Array.prototype.indexOf.call(t, 'Files') >= 0; }
+    document.addEventListener('dragover', function (ev) {
+      if (!isFileDrag(ev)) return; ev.preventDefault();
+      var k = dropKind(ev); ev.dataTransfer.dropEffect = k ? 'copy' : 'none';
+      document.body.classList.toggle('dropping', !!k);
+    });
+    document.addEventListener('dragleave', function (ev) { if (!ev.relatedTarget) document.body.classList.remove('dropping'); });
+    document.addEventListener('drop', function (ev) {
+      if (!isFileDrag(ev)) return; ev.preventDefault(); document.body.classList.remove('dropping');
+      var k = dropKind(ev), fs = ev.dataTransfer.files; if (!k || !fs || !fs.length) return;
+      if (isViewer()) return;
+      if (k === 'up') onUpload(fs); else if (k === 'os') osUpload(fs[0]); else if (k === 'sp') spUpload(fs[0]); else if (k === 'ia') iaUpload(fs[0]);
+    });
     document.addEventListener('paste', function (ev) { // 제보 창이 열려 있으면 Cmd+V로 캡처를 붙인다
       if (!FB.open || !ev.clipboardData) return;
       var it = [].filter.call(ev.clipboardData.items || [], function (x) { return x.kind === 'file' && /^image\//.test(x.type); })[0];
