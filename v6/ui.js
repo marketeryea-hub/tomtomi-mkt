@@ -8,7 +8,7 @@
   var C = root.TTCalc;
   var DATA = null, RAW = null;      // 정리된 데이터
   var META = {};        // 불러오기 결과(기타마켓 연결 여부 등)
-  var S = { mtag: '', msort: 'cost', msel: [], mapage: 0, view: 'home', from: '', to: '', preset: '1', cmp: 'prev', cmpFrom: '', cmpTo: '', ch: 'all', unit: 'auto', ad: 'store', page: 0, pch: 'all', pmode: 'item', open: '', draft: null, costMsg: '', saving: false, q: '', sel: [], selMsg: '', tpage: 0, topen: '', acOpen: {}, acSel: null, acBasis: 'ad', adView: 'camp', aitem: '', amd: 'all', apage: 0, aopen: {}, aiq: '', ppage: 0, psize: 10, dsort: 'new', ipage: 0, ptunit: 'auto', ptmet: 'qty', mpage: 0 };
+  var S = { mtag: '', msort: 'cost', msel: [], mapage: 0, view: 'home', from: '', to: '', preset: '1', cmp: 'off', cmpFrom: '', cmpTo: '', ch: 'all', unit: 'auto', ad: 'store', page: 0, pch: 'all', pmode: 'item', open: '', draft: null, costMsg: '', saving: false, q: '', sel: [], selMsg: '', tpage: 0, topen: '', acOpen: {}, acSel: null, acBasis: 'ad', adView: 'camp', aitem: '', amd: 'all', apage: 0, aopen: {}, aiq: '', ppage: 0, psize: 10, dsort: 'new', ipage: 0, ptunit: 'auto', ptmet: 'qty', mpage: 0 };
   var READY = { home: 1, sales: 1, ads: 1, products: 1, customers: 1, promo: 1, data: 1, slack: 1, itemadmin: 1, feedback: 1, supply: 1, settings: 1, othersale: 1 }; // 옮겨온 메뉴
   var STORE_KEY = 'tt6_state';
 
@@ -74,7 +74,7 @@
   }
   function periodBar() {
     var cr = cmpRange();
-    var presets = [['1', '1일'], ['7', '7일'], ['30', '30일'], ['90', '90일'], ['thisMonth', '이번 달'], ['lastMonth', '지난달'], ['thisYear', '올해'], ['all', '전체 기간']];
+    var presets = [['1', '1일'], ['7', '7일'], ['30', '30일'], ['90', '90일'], ['180', '180일'], ['365', '365일'], ['thisMonth', '이번 달'], ['lastMonth', '지난달'], ['thisYear', '올해'], ['all', '전체 기간']];
     var cmps = [['prev', '바로 앞 같은 길이'], ['lastYear', '작년 같은 기간'], ['custom', '직접 지정'], ['off', '비교 끄기']];
     var custom = S.cmp === 'custom';
     var h = '<section class="period" aria-label="기간 설정">';
@@ -236,7 +236,7 @@
 
   /* ───────── 표 넘겨보기: 최근 날짜부터 10줄씩 ───────── */
   var PAGE_SIZE_DEF = 10;
-  var PSIZES = [10, 20, 30, 40, 50], PFIELDS = ['page', 'apage', 'tpage', 'ppage', 'ipage', 'mpage', 'spage', 'mapage', 'ospage'];
+  var PSIZES = [10, 20, 30, 40, 50], PFIELDS = ['page', 'apage', 'tpage', 'ppage', 'ipage', 'mpage', 'spage', 'mapage', 'ospage', 'adpage', 'atpage'];
   var EXPORT_ALL = false; // 엑셀로 내보낼 때: 모든 줄을 한 번에, 펼칠 수 있는 줄은 다 펼쳐서 그린다
   function pageOf(list, size, field) {
     var f = field || 'page', PAGE_SIZE = PSIZES.indexOf(+S.psize) >= 0 ? +S.psize : 10, pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
@@ -463,7 +463,7 @@
   }
   function adViewToggle() {
     var h = '<div class="viewtoggle" role="group" aria-label="광고 보기 방식">';
-    [['camp', '캠페인 기준'], ['item', '상품 기준']].forEach(function (v) { h += '<button type="button" class="chip" data-act="adview" data-key="' + v[0] + '" aria-pressed="' + (S.adView === v[0]) + '">' + v[1] + '</button>'; });
+    [['camp', '캠페인 기준'], ['day', '일자 기준'], ['item', '상품 기준']].forEach(function (v) { h += '<button type="button" class="chip" data-act="adview" data-key="' + v[0] + '" aria-pressed="' + (S.adView === v[0]) + '">' + v[1] + '</button>'; });
     return h + '</div>';
   }
   function viewAds() {
@@ -574,8 +574,8 @@
       if (md === 'coupang' && bd.some(function (o) { return o.name === '(구분 없음)'; })) h += '<p class="note pad">일부 기간은 하루 합계만 저장되어 캠페인 구분이 없습니다.</p>';
     }
     h += '</section></div>';
-    if (md === 'sa' || md === 'coupang') h += adTreeHtml(md);
-    if (md === 'meta') h += metaHtml(M);
+    if (md === 'sa' || md === 'coupang') h += S.adView === 'day' ? adDayHtml(md) : adTreeHtml(md);
+    if (md === 'meta') h += S.adView === 'day' ? metaDayHtml() : metaHtml(M);
     return h;
   }
   /* ───────── 메타 소재 효율 (광고 > 메타) ─────────
@@ -759,6 +759,71 @@
     if (key.charAt(0) === '(') return muted('-') + esc(key);
     return codeLabel(key) + ' ' + esc(itemName(X, key));
   }
+  /* ───────── 광고 [일자 기준] (2026-11-27 예영: 일자 × 광고 × 상품을 날짜에서 출발해 보기) ─────────
+   * 날짜 줄 → 캠페인 → 광고그룹 → 상품. 날짜 줄 합계와 펼친 표는 그날 하루로 계산한 adTree (보이는 쪽만 계산)
+   */
+  var DOW = ['일', '월', '화', '수', '목', '금', '토'];
+  var ADCACHE = { key: '', m: {} };
+  function adDayTree(md, d) {
+    var basis = md === 'coupang' ? S.acBasis : 'ad', key = md + '|' + basis;
+    if (ADCACHE.key !== key || ADCACHE.data !== DATA) ADCACHE = { key: key, data: DATA, m: {} };
+    return ADCACHE.m[d] || (ADCACHE.m[d] = C.adTree(DATA, md, d, d, basis));
+  }
+  function adDayHtml(md) {
+    if (!S.adOpen) S.adOpen = {};
+    var cp = md === 'coupang', sold = cp && S.acBasis === 'sold', basis = cp ? S.acBasis : 'ad', h = '';
+    var days = C.adPathSeries(DATA, md, S.from, S.to, basis, {}).filter(function (o) { return o.cost || o.rev || o.clicks || o.imp; }).map(function (o) { return o.d; }).reverse();
+    days = dateOrder(days);
+    var pg = pageOf(days, 10, 'adpage');
+    h += '<section class="card flush" aria-label="일자 기준"><div class="card-h pad"><h2>날짜 ▸ 캠페인 ▸ 광고그룹 ▸ 상품</h2><span class="hint">날짜를 누르면 그날 어떤 캠페인, 상품에 돈을 썼는지 펼쳐져요</span>';
+    if (cp) [['ad', '광고한 상품 기준'], ['sold', '팔린 상품 기준']].forEach(function (b) { h += '<button type="button" class="chip" data-act="acbasis" data-key="' + b[0] + '" aria-pressed="' + (S.acBasis === b[0]) + '">' + b[1] + '</button>'; });
+    h += '<button type="button" class="chip" data-act="adopenall">' + (pg.rows.every(function (d) { return S.adOpen['d|' + d]; }) && pg.rows.length ? '이 쪽 모두 접기' : '이 쪽 모두 펼치기') + '</button></div>' + adCoverHtml(md) + '<div class="scroll">';
+    h += '<table class="tbl wrap adtree adday"><thead><tr><th scope="col">날짜 / 캠페인 / 광고그룹 / 상품</th><th scope="col" class="r">광고비</th><th scope="col" class="r">광고매출</th><th scope="col" class="r">ROAS</th><th scope="col" class="r">클릭</th><th scope="col" class="r">CTR</th><th scope="col" class="r">' + (cp ? '주문' : '전환') + '</th>' + (cp ? '<th scope="col" class="r">판매 수량</th>' : '') + '</tr></thead><tbody>';
+    function cells(m, lvl) {
+      var hideCost = sold && lvl === 3;
+      return '<td class="r num' + (lvl < 3 ? ' b' : '') + '">' + (hideCost ? '-' : n0(m.cost)) + '</td><td class="r num">' + n0(m.rev) + '</td><td class="r num">' + (hideCost ? '-' : roasText(C.ratio(m.rev, m.cost))) + '</td><td class="r num">' + (hideCost ? '-' : n0(m.clicks)) + '</td><td class="r num">' + (hideCost ? '-' : pct1(C.ratio(m.clicks, m.imp))) + '</td><td class="r num">' + n0(m.conv) + '</td>' + (cp ? '<td class="r num">' + n0(m.qty) + '</td>' : '');
+    }
+    if (!days.length) h += '<tr><td colspan="' + (cp ? 8 : 7) + '" class="none">이 기간에 집행 기록이 없습니다.</td></tr>';
+    var tot = null;
+    pg.rows.forEach(function (d) {
+      var T = adDayTree(md, d), dk = 'd|' + d, dop = EXPORT_ALL || !!S.adOpen[dk];
+      h += '<tr class="lv0"><th scope="row"><button type="button" class="exp" data-act="adopen" data-key="' + esc(dk) + '" aria-expanded="' + dop + '">' + (dop ? '▾ ' : '▸ ') + dot(d) + ' <small class="zero">' + DOW[new Date(d + 'T00:00:00').getDay()] + '</small></button></th>' + cells(T.total, 0) + '</tr>';
+      if (!dop) return;
+      T.camps.forEach(function (c) {
+        var ck = 'c|' + d + '|' + c.name, co = EXPORT_ALL || !!S.adOpen[ck];
+        h += '<tr class="lv1"><th scope="row"><button type="button" class="exp" data-act="adopen" data-key="' + esc(ck) + '" aria-expanded="' + co + '">' + (co ? '▾ ' : '▸ ') + esc(c.name) + '</button></th>' + cells(c.m, 1) + '</tr>';
+        if (!co) return;
+        c.groups.forEach(function (g) {
+          var gk = 'g|' + d + '|' + c.name + '|' + g.name, go = EXPORT_ALL || !!S.adOpen[gk], hasI = g.items.length > 0;
+          h += '<tr class="lv2"><th scope="row">' + (hasI ? '<button type="button" class="exp" data-act="adopen" data-key="' + esc(gk) + '" aria-expanded="' + go + '">' + (go ? '▾ ' : '▸ ') + esc(g.name) + '</button>' : '<span class="iname">' + esc(g.name) + '</span>') + '</th>' + cells(g.m, 2) + '</tr>';
+          if (!go) return;
+          g.items.forEach(function (it) { h += '<tr class="lv3"><th scope="row">' + adItemLabel(T, it.key) + '</th>' + cells(it.m, 3) + '</tr>'; });
+        });
+      });
+    });
+    if (days.length) { var A = adTreeModel(md); h += '<tr class="sum"><th scope="row">조회 기간 합계 (' + days.length + '일)</th>' + cells(A.total, 0) + '</tr>'; }
+    h += '</tbody></table>' + pagerHtml(pg) + '</div>';
+    h += '<p class="note pad">엑셀 받기(지금 화면 전체)를 누르면 \'일자별 캠페인 상품\' 시트에 날짜 × 캠페인 × 광고그룹 × 상품이 한 줄씩 들어가요.</p></section>';
+    return h;
+  }
+  // 메타 [일자 기준]: 날짜 → 소재
+  function metaDayHtml() {
+    if (!S.adOpen) S.adOpen = {};
+    var basis = C.metaAds(DATA, S.from, S.to).basis, lk = basis === 'link' ? '링크 ' : '', h = '';
+    var days = dateOrder(C.metaDaily(DATA, null, S.from, S.to, basis).filter(function (o) { return o.cost || o.imp; }).map(function (o) { return o; }).reverse()), pg = pageOf(days, 10, 'adpage');
+    h += '<section class="card flush" aria-label="일자 기준"><div class="card-h pad"><h2>날짜 ▸ 소재</h2><span class="hint">날짜를 누르면 그날 소재별 광고비와 ' + lk + 'CTR이 펼쳐져요</span></div><div class="scroll">';
+    h += '<table class="tbl wrap adtree adday"><thead><tr><th scope="col">날짜 / 소재</th><th scope="col" class="r">광고비</th><th scope="col" class="r">노출</th><th scope="col" class="r">' + lk + '클릭</th><th scope="col" class="r">' + lk + 'CTR</th><th scope="col" class="r">CPC</th><th scope="col" class="r">CPM</th></tr></thead><tbody>';
+    function cells(a, b) { return '<td class="r num' + (b ? ' b' : '') + '">' + n0(a.cost) + '</td><td class="r num">' + n0(a.imp) + '</td><td class="r num">' + n0(a.link) + '</td><td class="r num">' + pct1(a.ctr) + '</td><td class="r num">' + fmtBy(a.cpc, 'n') + '</td><td class="r num">' + fmtBy(a.cpm, 'n') + '</td>'; }
+    if (!days.length) h += '<tr><td colspan="7" class="none">이 기간에 메타 광고 기록이 없습니다.</td></tr>';
+    pg.rows.forEach(function (o) {
+      var dk = 'm|' + o.d, op = EXPORT_ALL || !!S.adOpen[dk];
+      h += '<tr class="lv0"><th scope="row"><button type="button" class="exp" data-act="adopen" data-key="' + esc(dk) + '" aria-expanded="' + op + '">' + (op ? '▾ ' : '▸ ') + dot(o.d) + ' <small class="zero">' + DOW[new Date(o.d + 'T00:00:00').getDay()] + '</small></button></th>' + cells(o, true) + '</tr>';
+      if (!op) return;
+      C.metaAds(DATA, o.d, o.d).list.filter(function (a) { return a.cost > 0 || a.imp > 0; }).forEach(function (a) { h += '<tr class="lv2"><th scope="row">' + esc(metaName(a)) + (a.set && a.ad ? ' <small class="zero">' + esc(a.set) + '</small>' : '') + '</th>' + cells(a) + '</tr>'; });
+    });
+    h += '</tbody></table>' + pagerHtml(pg) + '</div></section>';
+    return h;
+  }
   function adTreeHtml(md) {
     var T = adTreeModel(md), cp = md === 'coupang', sold = cp && S.acBasis === 'sold', h = '';
     h += '<section class="card flush" aria-label="캠페인 분석"><div class="card-h pad"><h2>캠페인 ▸ 광고그룹 ▸ 상품</h2><span class="hint">이름을 누르면 펼치고, [추이]를 누르면 아래 차트가 그 줄로 바뀝니다</span>';
@@ -790,7 +855,13 @@
     var title = !S.acSel ? '전체' : [path.camp, path.group, path.item ? adItemLabel(T, path.item).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() : null].filter(Boolean).join(' ▸ ');
     h += '<div class="pad cmpchart"><div class="card-h"><h2 style="font-size:15px">추이: ' + esc(title) + '</h2>' + (S.acSel ? '<button type="button" class="chip" data-act="acsel" data-key="">전체로</button>' : '') + '<span class="legend"><span class="lg-line"></span>광고매출 (왼쪽 눈금)</span><span class="legend"><span class="lg-bar"></span>광고비 (오른쪽 눈금)</span></div>';
     h += ser.length >= 2 ? chartSvg(ser, null, null, { line: '광고매출', bar: '광고비', unit: '원' }) : '<p class="note">조회 기간이 하루라서 추이 차트는 생략했습니다. 기간을 넓히면 차트가 나옵니다.</p>';
-    h += '<span class="note">' + (byMonth ? '월별' : '날짜별') + ' 합계' + (sold && path.item ? '. 팔린 상품 기준이라 광고비는 그 상품이 팔린 줄에 붙은 광고비만 잡힙니다.' : '') + '</span></div>';
+    h += '<span class="note">' + (byMonth ? '월별' : '날짜별') + ' 합계' + (sold && path.item ? '. 팔린 상품 기준이라 광고비는 그 상품이 팔린 줄에 붙은 광고비만 잡힙니다.' : '') + '</span>';
+    // 고른 줄의 날짜별 표 (2026-11-27 예영: 캠페인 기준 추이에도 날짜별 숫자)
+    var drows = dateOrder(rows.filter(function (o) { return o.cost || o.rev || o.clicks || o.imp; }).reverse()), dpg = pageOf(drows, 10, 'atpage');
+    h += '<h3 class="plh">날짜별: ' + esc(title) + '</h3><div class="scroll"><table class="tbl"><thead><tr><th scope="col">날짜</th><th scope="col" class="r">광고비</th><th scope="col" class="r">광고매출</th><th scope="col" class="r">ROAS</th><th scope="col" class="r">노출</th><th scope="col" class="r">클릭</th><th scope="col" class="r">CTR</th><th scope="col" class="r">' + (cp ? '주문' : '전환') + '</th></tr></thead><tbody>';
+    if (!drows.length) h += '<tr><td colspan="8" class="none">이 기간에 기록이 없습니다.</td></tr>';
+    dpg.rows.forEach(function (o) { h += '<tr><th scope="row" class="num">' + dot(o.d) + ' <small class="zero">' + DOW[new Date(o.d + 'T00:00:00').getDay()] + '</small></th><td class="r num b">' + n0(o.cost) + '</td><td class="r num">' + n0(o.rev) + '</td><td class="r num">' + roasText(C.ratio(o.rev, o.cost)) + '</td><td class="r num">' + n0(o.imp) + '</td><td class="r num">' + n0(o.clicks) + '</td><td class="r num">' + pct1(C.ratio(o.clicks, o.imp)) + '</td><td class="r num">' + n0(o.conv) + '</td></tr>'; });
+    h += '</tbody></table>' + pagerHtml(dpg) + '</div></div>';
     var notes = [];
     if (md === 'sa') {
       notes.push('광고그룹과 소재(상품)는 광고그룹이 들어간 보고서를 올린 날짜만 나옵니다. 그 전 날짜는 캠페인까지만 있습니다.');
@@ -2677,6 +2748,19 @@
     if (view === 'sales') chs = S.ch === 'all' ? CHS : [S.ch];
     else if (view === 'home') chs = CHS;
     else if (view === 'products') { chs = chList(); if (S.sel.length) codes = S.sel.slice(); }
+    else if (view === 'ads' && (S.ad === 'sa' || S.ad === 'coupang') && S.adView !== 'item') {
+      var amd = S.ad, acp = amd === 'coupang', abasis = acp ? S.acBasis : 'ad', ar = [['날짜', '캠페인', '광고그룹', '상품', '광고비', '광고매출', 'ROAS', '노출', '클릭', acp ? '주문' : '전환', '판매 수량']];
+      C.adPathSeries(DATA, amd, S.from, S.to, abasis, {}).forEach(function (o) {
+        if (!(o.cost || o.rev || o.clicks || o.imp)) return;
+        var T = adDayTree(amd, o.d);
+        T.camps.forEach(function (c) { c.groups.forEach(function (g) {
+          var its = g.items.length ? g.items : [{ key: '', m: g.m }];
+          its.forEach(function (it) { var m = it.m; ar.push([o.d, c.name, g.name, it.key ? adItemLabel(T, it.key).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() : '', Math.round(m.cost), Math.round(m.rev), m.cost ? Math.round(m.rev / m.cost * 100) + '%' : '', m.imp, m.clicks, m.conv, m.qty || '']); });
+        }); });
+      });
+      if (ar.length === 1) ar.push(['이 기간에 집행 기록이 없습니다']);
+      return { name: '일자별 캠페인 상품', rows: ar };
+    }
     else if (view === 'ads' && S.ad === 'meta' && S.adView !== 'item') {
       var mr = [['날짜', '캠페인', '광고 세트', '소재', '광고 ID', '광고비', '노출', '도달', '클릭(전체)', '링크 클릭', '링크 CTR', '랜딩 페이지 조회', '결과', '결과 유형', '비고']];
       DATA.adDet.meta.filter(function (e) { return e.d >= S.from && e.d <= S.to; }).sort(function (a, b) { return a.d < b.d ? -1 : a.d > b.d ? 1 : b.cost - a.cost; }).forEach(function (e) {
@@ -2988,6 +3072,8 @@
     if (act === 'aipick') { S.aitem = key; S.aiq = ''; S.apage = 0; S.aopen = {}; save(); render(); return; }
     if (act === 'amd') { S.amd = key; S.apage = 0; S.aopen = {}; render(); return; }
     if (act === 'aopen') { if (S.aopen[key]) delete S.aopen[key]; else S.aopen[key] = 1; render(); return; }
+    if (act === 'adopen') { if (!S.adOpen) S.adOpen = {}; if (S.adOpen[key]) delete S.adOpen[key]; else S.adOpen[key] = 1; render(); return; }
+    if (act === 'adopenall') { if (!S.adOpen) S.adOpen = {}; var md0 = S.ad, all0 = (md0 === 'meta' ? [] : []), pgDays = Array.prototype.slice.call(document.querySelectorAll('[data-act="adopen"][data-key^="d|"], [data-act="adopen"][data-key^="m|"]')).map(function (b) { return b.getAttribute('data-key'); }), openAll = !pgDays.every(function (k) { return S.adOpen[k]; }); pgDays.forEach(function (k) { if (openAll) S.adOpen[k] = 1; else delete S.adOpen[k]; }); render(); return; }
     if (act === 'acopen') { if (S.acOpen[key]) delete S.acOpen[key]; else S.acOpen[key] = 1; render(); return; }
     if (act === 'acsel') { S.acSel = key ? JSON.parse(key) : null; render(); return; }
     if (act === 'acbasis') { S.acBasis = key; S.acSel = null; render(); return; }

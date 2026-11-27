@@ -450,3 +450,8 @@ body.viewer .edonly { display: none !important; }
 body.viewer section[aria-label="프로모션 등록"], body.viewer [data-act="pnew"], body.viewer [data-act="pedit"], body.viewer [data-act="prowdelask"], body.viewer [data-act="plpromo"], body.viewer .edtail button { display: none !important; }
 body.viewer section[aria-label="프로모션 등록"], body.viewer [data-act="pnew"], body.viewer [data-act="pedit"], body.viewer [data-act="prowdelask"], body.viewer [data-act="plpromo"], body.viewer .edtail button { display: none !important; }
 body.dropping .main { outline: 3px dashed var(--accent); outline-offset: -8px; }
+.tbl.adtree tr.lv0 th { font-weight: 700; }
+.tbl.adtree tr.lv0 td, .tbl.adtree tr.lv0 th { background: #F7F7FB; }
+.tbl.adday tr.lv1 th { padding-left: 26px; }
+.tbl.adday tr.lv2 th { padding-left: 50px; }
+.tbl.adday tr.lv3 th { padding-left: 74px; }
