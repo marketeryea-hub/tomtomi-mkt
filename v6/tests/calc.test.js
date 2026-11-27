@@ -300,7 +300,7 @@ eq('쿠팡 광고 상품명 연결', ['톰토미 루나 NEW 봉제인형,블루,
 }
 eq('기간 버튼 180일, 365일', [C.preset('180', '2026-11-26'), C.preset('365', '2026-11-26')], [{ from: '2026-05-31', to: '2026-11-26' }, { from: '2025-11-27', to: '2026-11-26' }]);
 {
-  const D = C.normalize({ naver: [{ d: '2026-10-05', net: 3100 }, { d: '2026-11-01', net: 500 }, { d: '2026-11-02', net: 200 }, { d: '2026-11-03', net: 300 }].map(e => Object.assign({ gross: e.net, refund: 0, orders: 1 }, e)), coupStock: [] });
+  const D = C.normalize({ naver: [['2026-10-05', 3100], ['2026-11-01', 500], ['2026-11-02', 200], ['2026-11-03', 300]].map(x => ({ d: x[0], r: x[1], refund: 0, o: 1 })), coupStock: [] });
   const P = C.monthPace(D, '2026-11-03');
   eq('이번 달 실적', [P.prev.total, P.mtd.cur.total, Math.round(P.mtd.pct * 1000) / 1000, P.yday.cur.total, P.today.cur.total, P.yday.goal, P.elapsed, P.days], [3100, 1000, 0.323, 200, 300, 100, 3, 30]);
 }
