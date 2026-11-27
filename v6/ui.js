@@ -158,6 +158,29 @@
   }
 
   /* ───────── 홈 ───────── */
+  /* 이번 달 온라인 매출 실적 (홈 맨 위). 조회 기간과 상관없이 데이터 기준일의 달 기준 */
+  function paceHtml() {
+    var P = C.monthPace(DATA); if (!P) return '';
+    var mo = +P.month.slice(5, 7), pmo = +P.prevMonth.slice(5, 7), MAX = 1.2;
+    function man(v) { return v >= 10000 ? n0(v / 10000) + '만' : n0(v); }
+    function bar(label, sub, r, cls, marker) {
+      var p = r.pct, w = p === null ? 0 : Math.min(p, MAX) / MAX * 100, tip = '네이버 ' + n0(r.cur.naver) + '원, 쿠팡 입고 ' + n0(r.cur.coupang) + '원, 기타 ' + n0(r.cur.other) + '원';
+      var h = '<div class="pace-row"><div class="pace-l"><b>' + label + '</b><small>' + sub + '</small></div><div class="pace-track" title="' + esc(tip) + '"><div class="pace-fill ' + cls + '" style="width:' + w.toFixed(1) + '%"></div>';
+      if (marker !== undefined) h += '<span class="pace-mark" style="left:' + (Math.min(marker, MAX) / MAX * 100).toFixed(1) + '%" title="오늘까지 목표 진도 ' + Math.round(marker * 100) + '%"></span>';
+      h += '<span class="pace-pct' + (w > 72 ? ' in' : '') + '" style="left:' + w.toFixed(1) + '%">' + (p === null ? '-' : Math.round(p * 100) + '%' + (p > MAX ? ' ▶' : '')) + '</span></div>';
+      return h + '<div class="pace-v num"><b>' + man(r.cur.total) + '</b><small>/ ' + man(r.goal) + '</small></div></div>';
+    }
+    var h = '<section class="card pace" aria-label="이번 달 실적"><div class="card-h"><h2>' + mo + '월 온라인 매출 실적</h2><span class="hint">목표 = 지난달(' + pmo + '월) 실매출 ' + n0(P.prev.total) + '원, 하루 목표 = 지난달 하루 평균. 기준일 ' + dot(P.base) + '</span></div>';
+    if (!(P.prev.total > 0)) return h + '<p class="note">지난달 매출 기록이 없어 목표를 잡을 수 없어요.</p></section>';
+    h += '<div class="pace-body">';
+    h += bar('당월누계', mo + '.1 ~ ' + mdot(P.base), P.mtd, 'g', P.pace);
+    h += bar('전일실적', mdot(P.yday.d), P.yday, 'b');
+    h += bar('당일실적', mdot(P.today.d), P.today, 'o');
+    h += '<div class="pace-row axis"><div class="pace-l"></div><div class="pace-ticks">' + [0, 0.3, 0.6, 0.9, 1.2].map(function (t) { return '<span style="left:' + (t / MAX * 100) + '%">' + Math.round(t * 100) + '%</span>'; }).join('') + '</div><div class="pace-v"></div></div></div>';
+    var ahead = P.mtd.pct - P.pace;
+    h += '<p class="note">점선 = 100%(지난달만큼), 당월누계의 세로 막대 = 오늘까지 지났어야 할 진도 ' + Math.round(P.pace * 100) + '% (' + P.elapsed + '일 / ' + P.days + '일). ' + (ahead >= 0 ? '진도보다 <b>' + Math.round(ahead * 100) + '%p 앞서</b> 있어요' : '진도보다 <b class="warn">' + Math.round(-ahead * 100) + '%p 뒤처져</b> 있어요') + '. 지금 속도면 월말 약 <b>' + man(P.forecast) + '원</b> (지난달의 ' + Math.round(P.forecastPct * 100) + '%).</p>';
+    return h + '</section>';
+  }
   function viewHome() {
     var cr = cmpRange(), has = !!cr;
     var sc = C.summary(DATA, S.from, S.to), sp = has ? C.summary(DATA, cr.from, cr.to) : null;
@@ -167,6 +190,7 @@
     var unitName = ctx ? '최근 14일' : unit === 'day' ? '일별' : unit === 'week' ? '주별' : '월별';
     var h = '';
 
+    h += paceHtml();
     h += '<section aria-label="실매출"><div class="sec-h"><h2>실매출</h2><span>톰토미에 실제로 들어온 돈 (네이버 순매출 + 쿠팡 입고 + 기타마켓)</span></div><div class="kpis">';
     function kpi(label, cur, prev, main) {
       return '<div class="kpi' + (main ? ' main-kpi' : '') + '"><span class="lab">' + label + '</span><span class="val num">' + won(cur) + '<small>원</small></span>' + deltaHtml(cur, prev, has) + '</div>';

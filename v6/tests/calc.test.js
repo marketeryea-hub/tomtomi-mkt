@@ -299,5 +299,10 @@ eq('쿠팡 광고 상품명 연결', ['톰토미 루나 NEW 봉제인형,블루,
   eq('기타몰 입력 반영', D.other.map(e => [e.d, e.market, e.amount]), [['2026-02-19', '이베이', 45000], ['2026-01-04', '11번가', 11130]]);
 }
 eq('기간 버튼 180일, 365일', [C.preset('180', '2026-11-26'), C.preset('365', '2026-11-26')], [{ from: '2026-05-31', to: '2026-11-26' }, { from: '2025-11-27', to: '2026-11-26' }]);
+{
+  const D = C.normalize({ naver: [['2026-10-05', 3100], ['2026-11-01', 500], ['2026-11-02', 200], ['2026-11-03', 300]].map(x => ({ d: x[0], r: x[1], refund: 0, o: 1 })), coupStock: [] });
+  const P = C.monthPace(D, '2026-11-03');
+  eq('이번 달 실적', [P.prev.total, P.mtd.cur.total, Math.round(P.mtd.pct * 1000) / 1000, P.yday.cur.total, P.today.cur.total, P.yday.goal, P.elapsed, P.days], [3100, 1000, 0.323, 200, 300, 100, 3, 30]);
+}
 console.log(fail ? '실패 ' + fail + '건' : '모든 규칙 통과');
 process.exit(fail ? 1 : 0);
